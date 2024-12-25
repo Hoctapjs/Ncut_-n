@@ -15,7 +15,7 @@ try:
 except cp.cuda.runtime.CUDARuntimeError as e:
     print("CUDA runtime error:", e) """
 
-import numpy as np
+""" import numpy as np
 import cupy as cp
 import time
 
@@ -39,5 +39,11 @@ print(f"Thời gian thực hiện trên CPU: {end_cpu - start_cpu:.6f} giây")
 print(f"Thời gian thực hiện trên GPU: {end_gpu - start_gpu:.6f} giây")
 
 # Nếu muốn chuyển kết quả từ GPU về CPU để kiểm tra
-gpu_result_cpu = gpu_result.get()
+gpu_result_cpu = gpu_result.get() """
+
+import cupy
+
+gpu_mem = cupy.cuda.Device(0).mem_info
+print(f"GPU Memory: Free={gpu_mem[0] / (1024**3):.2f} GB, Total={gpu_mem[1] / (1024**3):.2f} GB")
+
 
