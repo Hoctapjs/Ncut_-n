@@ -101,5 +101,5 @@ def normalized_cuts(image_path, k=2):
 # 7. Chạy thử nghiệm
 if __name__ == "__main__":
     # Đường dẫn tới ảnh của bạn
-    image_path = "apple2.jpg"  # Thay bằng đường dẫn ảnh của bạn
+    image_path = "apple3.jpg"  # Thay bằng đường dẫn ảnh của bạn
     normalized_cuts(image_path, k=3)  # Phân vùng thành 4 nhóm
