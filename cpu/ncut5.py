@@ -4,6 +4,26 @@ from sklearn.metrics.pairwise import rbf_kernel
 from scipy.sparse.linalg import eigsh
 from sklearn.cluster import KMeans
 from skimage import io, color
+from sklearn.metrics import silhouette_score
+
+# Xác định số cụm tối ưu dựa trên Silhouette score
+def determine_optimal_clusters(eigen_vectors, max_k):
+    best_k = 2
+    best_score = -1
+    for k in range(2, max_k + 1):
+        kmeans = KMeans(n_clusters=k, random_state=0).fit(eigen_vectors)
+        score = silhouette_score(eigen_vectors, kmeans.labels_)
+        if score > best_score:
+            best_k = k
+            best_score = score
+    return best_k
+
+# Tính số vector riêng cần thiết dựa trên Eigenvalue Gap
+def determine_optimal_eigenvalues(vals):
+    gaps = np.diff(vals)
+    optimal_k = np.argmax(gaps) + 1  # Tìm khoảng cách lớn nhất
+    return optimal_k
+
 
 # 1. Tính ma trận trọng số
 def compute_weight_matrix(image, sigma_i=0.1, sigma_x=10):
@@ -59,7 +79,7 @@ def display_segmentation(image, labels, k):
     plt.show()
 
 # 6. Kết hợp toàn bộ
-def normalized_cuts(image_path, k=2):
+def normalized_cuts(image_path, max_k):
     # Đọc ảnh và chuẩn hóa
     image = io.imread(image_path)
     if image.ndim == 2:  # Nếu là ảnh xám, chuyển thành RGB
@@ -67,25 +87,35 @@ def normalized_cuts(image_path, k=2):
     elif image.shape[2] == 4:  # Nếu là ảnh RGBA, loại bỏ kênh alpha
         image = image[:, :, :3]
     image = image / 255.0  # Chuẩn hóa về [0, 1]
-    
+
     # Tính toán Ncuts
     print("Computing weight matrix...")
     W = compute_weight_matrix(image)
     
     print("Computing Laplacian...")
     L, D = compute_laplacian(W)
-    
-    print("Computing eigenvectors...")
-    eigen_vectors = compute_eigen(L, D, k=k)  # Tính k vector riêng
-    
+
+    print("Computing eigenvalues and eigenvectors...")
+    vals, vecs = eigsh(L, k=max_k, M=D, which='SM')  # Lấy nhiều vector riêng để phân tích
+
+    print("Determining optimal number of clusters...")
+    optimal_eigen_k = determine_optimal_eigenvalues(vals)
+    eigen_vectors = vecs[:, :optimal_eigen_k]  # Chỉ lấy các vector riêng cần thiết
+
+    print("Determining optimal k for clustering...")
+    optimal_clusters = determine_optimal_clusters(eigen_vectors, max_k=max_k)
+
+    print(f"Optimal clusters: {optimal_clusters}, Eigen vectors used: {optimal_eigen_k}")
+
     print("Partitioning graph...")
-    labels = assign_labels(eigen_vectors, k)  # Gán nhãn cho mỗi điểm ảnh
-    
+    labels = assign_labels(eigen_vectors, optimal_clusters)
+
     print("Displaying results...")
-    display_segmentation(image, labels, k)
+    display_segmentation(image, labels, optimal_clusters)
 
 # 7. Chạy thử nghiệm
 if __name__ == "__main__":
-    # Đường dẫn tới ảnh của bạn
-    image_path = "D:/cayco.png"  # Thay bằng đường dẫn ảnh của bạn
-    normalized_cuts(image_path, k=4)  # Phân vùng thành 4 nhóm
+    image_path = "D:/result_traitao.jpg"  # Đường dẫn ảnh
+    # image_path = "D:/cayco.png"  # Đường dẫn ảnh
+    # image_path = "D:/result_profile.png"  # Đường dẫn ảnh
+    normalized_cuts(image_path, max_k=8)  # Xác định tối đa 10 cụm
